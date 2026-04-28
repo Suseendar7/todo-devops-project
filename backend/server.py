@@ -11,7 +11,7 @@ collection = db["tasks"]
 
 @app.route("/")
 def home():
-    return "Todo Backend Running!"
+    return "Backend Updated!"
 
 @app.route("/tasks", methods=["GET"])
 def get_tasks():
