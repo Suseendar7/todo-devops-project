@@ -9,12 +9,15 @@ from datetime import datetime
 app = Flask(__name__)
 CORS(app)
 
+# MongoDB connection
 client = MongoClient("mongodb://mongo:27017/")
 db = client["devops_db"]
 collection = db["builds"]
 
+# Folder name for cloned repo
 REPO_DIR = "repo"
 
+# Home route
 @app.route("/")
 def home():
     return {
@@ -23,6 +26,7 @@ def home():
         "version": "1.0"
     }
 
+# Build repository route
 @app.route("/build", methods=["POST"])
 def build_repo():
 
@@ -30,9 +34,11 @@ def build_repo():
     repo_url = data.get("repo")
 
     if not repo_url:
-        return jsonify({"error": "Repository URL required"}), 400
+        return jsonify({
+            "error": "Repository URL required"
+        }), 400
 
-    # Delete old repo folder
+    # Remove old repo folder
     if os.path.exists(REPO_DIR):
         shutil.rmtree(REPO_DIR)
 
@@ -40,7 +46,7 @@ def build_repo():
 
     try:
 
-        # Clone repo
+        # Clone GitHub repo
         clone = subprocess.run(
             ["git", "clone", repo_url, REPO_DIR],
             capture_output=True,
@@ -49,26 +55,35 @@ def build_repo():
 
         logs += clone.stdout + clone.stderr
 
+        # Check clone success
         if clone.returncode != 0:
-            raise Exception("Clone failed")
+            raise Exception("Git clone failed")
 
-        # Build docker image
+        # Build Docker image
         build = subprocess.run(
-            ["docker", "build", "-t", "ci-build", REPO_DIR],
+            [
+                "docker",
+                "build",
+                "-t",
+                "ci-build",
+                f"{REPO_DIR}/backend"
+            ],
             capture_output=True,
             text=True
         )
 
         logs += build.stdout + build.stderr
 
+        # Check build result
         if build.returncode == 0:
             status = "SUCCESS"
         else:
             status = "FAILED"
 
     except Exception as e:
+
         status = "FAILED"
-        logs += str(e)
+        logs += "\n" + str(e)
 
     # Save build history
     collection.insert_one({
@@ -78,11 +93,13 @@ def build_repo():
         "time": str(datetime.now())
     })
 
+    # Send response
     return jsonify({
         "status": status,
-        "logs": logs[-1000:]
+        "logs": logs[-1500:]
     })
 
+# Build history route
 @app.route("/history", methods=["GET"])
 def history():
 
@@ -98,5 +115,6 @@ def history():
 
     return jsonify(builds)
 
+# Run Flask app
 if __name__ == "__main__":
     app.run(host="0.0.0.0", port=5000)
