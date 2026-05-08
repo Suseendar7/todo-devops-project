@@ -1,4 +1,4 @@
-name: CI Pipeline
+name: DevOps CI Pipeline
 
 on:
   push:
@@ -6,12 +6,15 @@ on:
       - main
 
 jobs:
+
   build:
+
     runs-on: ubuntu-latest
 
     steps:
+
       - name: Checkout Code
         uses: actions/checkout@v3
 
-      - name: Build Docker Image
-        run: docker build -t todo-backend ./backend
+      - name: Build Backend Docker Image
+        run: docker build -t devops-build-system ./backend

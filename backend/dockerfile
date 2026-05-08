@@ -4,6 +4,8 @@ WORKDIR /app
 
 COPY . .
 
+RUN apt-get update && apt-get install -y docker.io git
+
 RUN pip install flask flask-cors pymongo
 
 EXPOSE 5000

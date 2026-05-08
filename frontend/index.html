@@ -1,58 +1,164 @@
 <!DOCTYPE html>
 <html>
+
 <head>
-    <title>Todo App</title>
+
+<title>DevOps Build System</title>
+
+<style>
+
+body{
+    font-family: Arial;
+    background: #0f172a;
+    color: white;
+    display: flex;
+    justify-content: center;
+    margin-top: 50px;
+}
+
+.container{
+    width: 700px;
+}
+
+input{
+    width: 70%;
+    padding: 12px;
+}
+
+button{
+    padding: 12px;
+    background: #22c55e;
+    border: none;
+    color: white;
+    cursor: pointer;
+}
+
+.log-box{
+    background: black;
+    margin-top: 20px;
+    padding: 10px;
+    height: 250px;
+    overflow: auto;
+    font-size: 12px;
+}
+
+.card{
+    background: #1e293b;
+    padding: 10px;
+    margin-top: 10px;
+}
+
+.success{
+    color: #22c55e;
+}
+
+.failed{
+    color: red;
+}
+
+</style>
+
 </head>
 
 <body>
 
-<h1>Todo App</h1>
+<div class="container">
 
-<input id="taskInput" placeholder="Enter a task">
-<button onclick="addTask()">Add Task</button>
+<h1>🚀 DevOps Build System</h1>
 
-<ul id="taskList"></ul>
+<input id="repo" placeholder="Enter GitHub Repository URL">
+
+<button onclick="buildRepo()">Build</button>
+
+<h2 id="status"></h2>
+
+<div class="log-box" id="logs"></div>
+
+<h2>Build History</h2>
+
+<div id="history"></div>
+
+</div>
 
 <script>
 
-const API_URL = "http://localhost:5000/tasks";
+const API = "http://localhost:5000";
 
-function loadTasks() {
-    fetch(API_URL)
-    .then(response => response.json())
-    .then(data => {
-        const list = document.getElementById("taskList");
-        list.innerHTML = "";
+function buildRepo(){
 
-        data.forEach(task => {
-            const li = document.createElement("li");
-            li.textContent = task;
-            list.appendChild(li);
-        });
-    });
-}
+    const repo = document.getElementById("repo").value;
 
-function addTask() {
+    fetch(API + "/build", {
 
-    const task = document.getElementById("taskInput").value;
-
-    fetch(API_URL, {
         method: "POST",
+
         headers: {
             "Content-Type": "application/json"
         },
-        body: JSON.stringify({task: task})
+
+        body: JSON.stringify({
+            repo: repo
+        })
+
     })
-    .then(() => {
-        document.getElementById("taskInput").value = "";
-        loadTasks();
+
+    .then(res => res.json())
+
+    .then(data => {
+
+        document.getElementById("status").innerText =
+            "Build Status: " + data.status;
+
+        document.getElementById("logs").innerText =
+            data.logs;
+
+        loadHistory();
+
     });
 
 }
 
-loadTasks();
+function loadHistory(){
+
+    fetch(API + "/history")
+
+    .then(res => res.json())
+
+    .then(data => {
+
+        let html = "";
+
+        data.forEach(build => {
+
+            html += `
+                <div class="card">
+
+                    <b>Repository:</b> ${build.repo} <br>
+
+                    <b>Status:</b>
+                    <span class="${build.status === 'SUCCESS' ? 'success' : 'failed'}">
+                        ${build.status}
+                    </span>
+
+                    <br>
+
+                    <b>Time:</b> ${build.time}
+
+                </div>
+            `;
+
+        });
+
+        document.getElementById("history").innerHTML = html;
+
+    });
+
+}
+
+loadHistory();
 
 </script>
 
 </body>
+
 </html>
